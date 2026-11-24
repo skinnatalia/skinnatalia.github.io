@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#fbf9f5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Skincare NL" />
+  <title>Skincare NATALIA LUZAK — Kalendarz Wizyt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-page: #fbf9f5;
+      --bg-surface: #ffffff;
+      --bg-cream: #f6f1e6;
+      --bg-cream-hover: #efe7d4;
+      --gold-primary: #a67c2e;
+      --gold-dark: #7d5b1c;
+      --gold-light: #d6b87c;
+      --gold-border: #d9c396;
+      --gold-soft: rgba(166, 124, 46, 0.12);
+      --text-main: #231f1a;
+      --text-muted: #787064;
+      --text-faint: #b3aba0;
+      --border-light: #ede6d6;
+      --danger: #b83b3b;
+      --success: #2c7a52;
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --shadow-card: 0 2px 10px rgba(35, 31, 26, 0.04);
+      --shadow-fab: 0 8px 22px rgba(166, 124, 46, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      padding-bottom: 96px;
+    }
+
+    .app-shell {
+      max-width: 540px;
+      margin: 0 auto;
+      background: var(--bg-page);
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Top Header */
+    .top-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 12px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-light);
+      gap: 10px;
+    }
+
+    .brand-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .monogram {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1.5px solid var(--gold-border);
+      background: var(--bg-cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--gold-primary);
+      letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+
+    .brand-titles {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .brand-name {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 23px;
+      font-weight: 500;
+      line-height: 1.05;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand-sub {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--gold-primary);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-shrink: 0;
+    }
+
+    .sync-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22b573;
+      box-shadow: 0 0 0 3px rgba(34, 181, 115, 0.15);
+      cursor: pointer;
+    }
+
+    .sync-dot.cloud {
+      background: #2b7de9;
+      box-shadow: 0 0 0 3px rgba(43, 125, 233, 0.16);
+    }
+
+    .icon-circle-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--gold-border);
+      background: var(--bg-surface);
+      color: var(--gold-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      font-size: 15px;
+      transition: background 0.15s ease;
+    }
+
+    .icon-circle-btn:hover {
+      background: var(--bg-cream);
+    }
+
+    .badge-dot {
+      position: absolute;
+      top: 5px;
+      right: 6px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--danger);
+      display: none;
+    }
+
+    .badge-dot.active {
+      display: block;
+    }
+
+    .logout-pill {
+      height: 34px;
+      padding: 0 11px;
+      border-radius: 999px;
+      border: 1px solid var(--gold-border);
+      background: var(--bg-surface);
+      color: var(--gold-dark);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .logout-pill:hover {
+      background: var(--bg-cream);
+    }
+
+    /* Main Tabs */
+    .main-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .tab-btn {
+      padding: 13px 10px;
+      background: transparent;
+      border: none;
+      border-bottom: 2.5px solid transparent;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.9px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn.active {
+      color: var(--gold-primary);
+      border-bottom-color: var(--gold-primary);
+      background: rgba(246, 241, 230, 0.35);
+    }
+
+    /* Month Navigator */
+    .month-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 10px;
+    }
+
+    .month-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 25px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin: 0;
+    }
+
+    .month-arrow {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-main);
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .month-arrow:hover {
+      background: var(--bg-cream);
+      border-color: var(--border-light);
+    }
+
+    /* Calendar Grid */
+    .weekdays-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      padding: 4px 14px 8px;
+      text-align: center;
+    }
+
+    .weekday-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      padding: 0 14px 14px;
+    }
+
+    .day-cell {
+      aspect-ratio: 1 / 1.05;
+      border-radius: var(--radius-sm);
+      background: var(--bg-cream);
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-main);
+      transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .day-cell:hover {
+      background: var(--bg-cream-hover);
+    }
+
+    .day-cell.other-month {
+      background: rgba(246, 241, 230, 0.45);
+      color: var(--text-faint);
+    }
+
+    .day-cell.has-visits {
+      background: #efe5cf;
+      font-weight: 600;
+    }
+
+    .day-cell.today {
+      border: 2px solid var(--gold-primary);
+      box-shadow: inset 0 0 0 2px var(--bg-page);
+      font-weight: 700;
+    }
+
+    .day-cell.selected {
+      background: var(--gold-primary);
+      color: #ffffff;
+      font-weight: 700;
+      border-color: var(--gold-primary);
+      box-shadow: 0 4px 12px rgba(166, 124, 46, 0.28);
+    }
+
+    .day-cell.selected.today {
+      box-shadow: inset 0 0 0 2px #ffffff, 0 4px 12px rgba(166, 124, 46, 0.35);
+    }
+
+    .visit-count {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--gold-dark);
+    }
+
+    .day-cell.selected .visit-count {
+      color: #fff8e7;
+    }
+
+    .section-divider {
+      height: 1px;
+      background: var(--border-light);
+      margin: 4px 16px 14px;
+    }
+
+    /* Selected Day Section */
+    .day-section {
+      padding: 0 16px;
+    }
+
+    .day-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      gap: 8px;
+    }
+
+    .day-heading {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin: 0;
+    }
+
+    .today-jump-btn {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gold-dark);
+      background: var(--bg-cream);
+      border: 1px solid var(--gold-border);
+      padding: 5px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 28px 18px;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.55;
+      background: var(--bg-surface);
+      border: 1px dashed var(--gold-border);
+      border-radius: var(--radius-md);
+    }
+
+    .empty-state strong {
+      color: var(--gold-dark);
+    }
+
+    .visit-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-left: 4px solid var(--gold-primary);
+      border-radius: var(--radius-md);
+      padding: 13px 14px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .visit-card.status-done {
+      border-left-color: var(--success);
+      opacity: 0.88;
+    }
+
+    .visit-card.status-cancelled {
+      border-left-color: var(--danger);
+      opacity: 0.72;
+    }
+
+    .visit-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .visit-time-badge {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gold-dark);
+      background: var(--bg-cream);
+      padding: 4px 9px;
+      border-radius: 8px;
+    }
+
+    .visit-price {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .visit-client {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .visit-service {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .visit-notes {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      background: var(--bg-page);
+      padding: 7px 10px;
+      border-radius: 8px;
+    }
+
+    .visit-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .mini-btn {
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
+      background: var(--bg-cream);
+      color: var(--text-main);
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .mini-btn:hover {
+      background: var(--bg-cream-hover);
+    }
+
+    .mini-btn.danger {
+      color: var(--danger);
+      background: #fdf3f3;
+      border-color: #f0c9c9;
+    }
+
+    /* Clients Tab */
+    .clients-view {
+      padding: 16px;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--gold-border);
+      background: var(--bg-surface);
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text-main);
+      margin-bottom: 12px;
+    }
+
+    .client-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .client-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .client-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .client-note {
+      font-size: 12.5px;
+      color: var(--gold-dark);
+      background: var(--bg-cream);
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+
+    /* Floating Add Button */
+    .fab-btn {
+      position: fixed;
+      right: max(20px, calc(50% - 250px));
+      bottom: 24px;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      border: none;
+      background: var(--gold-primary);
+      color: #ffffff;
+      font-size: 30px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-fab);
+      cursor: pointer;
+      z-index: 40;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .fab-btn:hover {
+      background: var(--gold-dark);
+      transform: scale(1.04);
+    }
+
+    /* Modal Sheet */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(35, 31, 26, 0.48);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 100;
+      padding: 10px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-sheet {
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg) var(--radius-lg) 16px 16px;
+      padding: 20px 18px 24px;
+      box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.16);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .modal-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0;
+      color: var(--text-main);
+    }
+
+    .close-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--border-light);
+      background: var(--bg-cream);
+      color: var(--text-main);
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--gold-border);
+      background: var(--bg-page);
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text-main);
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--gold-primary);
+      background: #ffffff;
+    }
+
+    textarea.form-control {
+      min-height: 70px;
+      resize: vertical;
+    }
+
+    .primary-btn {
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: var(--radius-md);
+      border: none;
+      background: var(--gold-primary);
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+    }
+
+    .primary-btn:hover {
+      background: var(--gold-dark);
+    }
+
+    .secondary-btn {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--gold-border);
+      background: var(--bg-cream);
+      color: var(--gold-dark);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    /* Settings & Services */
+    .settings-nav {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .pill-tab {
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--gold-border);
+      background: var(--bg-cream);
+      color: var(--gold-dark);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .pill-tab.active {
+      background: var(--gold-primary);
+      color: #ffffff;
+      border-color: var(--gold-primary);
+    }
+
+    .service-item {
+      border: 1px solid var(--border-light);
+      background: var(--bg-page);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .service-item-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .service-item-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .help-box {
+      background: var(--bg-cream);
+      border: 1px solid var(--gold-border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text-main);
+      margin-bottom: 12px;
+    }
+
+    .help-box ol {
+      margin: 6px 0 0;
+      padding-left: 18px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%) translateY(120px);
+      background: var(--text-main);
+      color: #ffffff;
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 200;
+      transition: transform 0.25s ease;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="brand-box">
+        <div class="monogram" id="brandMonogram">NL</div>
+        <div class="brand-titles">
+          <div class="brand-name" id="brandName">Skincare</div>
+          <div class="brand-sub" id="brandSub">NATALIA LUZAK</div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <span class="sync-dot" id="syncDot" title="Zapis lokalny w urządzeniu" onclick="openSettings('cloud')"></span>
+        <button class="icon-circle-btn" id="notifBtn" title="Przypomnienia o wizytach" onclick="openNotifications()">
+          🔔
+          <span class="badge-dot" id="notifDot"></span>
+        </button>
+        <button class="icon-circle-btn" id="settingsBtn" title="Ustawienia, usługi i chmura" onclick="openSettings('general')">
+          ⚙️
+        </button>
+        <button class="logout-pill" id="lockBtn" title="Zablokuj / Wyloguj widok" onclick="toggleLock()">
+          ↪ Wyloguj
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="main-tabs">
+      <button class="tab-btn active" id="tabCalendar" onclick="switchTab('calendar')">
+        📅 KALENDARZ
+      </button>
+      <button class="tab-btn" id="tabClients" onclick="switchTab('clients')">
+        👥 KLIENCI (<span id="clientsCount">0</span>)
+      </button>
+    </nav>
+
+    <!-- Calendar View -->
+    <section id="calendarView">
+      <div class="month-nav">
+        <button class="month-arrow" onclick="changeMonth(-1)" aria-label="Poprzedni miesiąc">‹</button>
+        <h1 class="month-title" id="monthTitle">Listopad 2026</h1>
+        <button class="month-arrow" onclick="changeMonth(1)" aria-label="Następny miesiąc">›</button>
+      </div>
+
+      <div class="weekdays-row">
+        <div class="weekday-label">PN</div>
+        <div class="weekday-label">WT</div>
+        <div class="weekday-label">ŚR</div>
+        <div class="weekday-label">CZ</div>
+        <div class="weekday-label">PT</div>
+        <div class="weekday-label">SO</div>
+        <div class="weekday-label">ND</div>
+      </div>
+
+      <div class="days-grid" id="daysGrid"></div>
+
+      <div class="section-divider"></div>
+
+      <div class="day-section">
+        <div class="day-section-header">
+          <h2 class="day-heading" id="selectedDayHeading">Dziś — 24 listopada (wtorek)</h2>
+          <button class="today-jump-btn" onclick="jumpToToday()">Dziś</button>
+        </div>
+        <div id="dayVisitsList"></div>
+      </div>
+    </section>
+
+    <!-- Clients View -->
+    <section id="clientsView" class="clients-view" style="display:none;">
+      <input
+        type="text"
+        class="search-box"
+        id="clientSearch"
+        placeholder="Szukaj klientki po imieniu, nazwisku lub telefonie..."
+        oninput="renderClients()"
+      />
+      <div id="clientsList"></div>
+    </section>
+
+    <!-- Floating Add Button -->
+    <button class="fab-btn" id="fabAddBtn" title="Dodaj wizytę" onclick="openVisitModal()">+</button>
+  </div>
+
+  <!-- Visit Modal -->
+  <div class="modal-backdrop" id="visitModal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 class="modal-title" id="visitModalTitle">Nowa wizyta</h3>
+        <button class="close-btn" onclick="closeModal('visitModal')">×</button>
+      </div>
+
+      <form id="visitForm" onsubmit="saveVisit(event)">
+        <input type="hidden" id="visitId" />
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="visitDate">Data wizyty</label>
+            <input type="date" class="form-control" id="visitDate" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="visitTime">Godzina</label>
+            <input type="time" class="form-control" id="visitTime" value="10:00" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="visitClient">Imię i nazwisko klientki</label>
+          <input type="text" class="form-control" id="visitClient" list="clientSuggestions" placeholder="np. Anna Kowalska" required />
+          <datalist id="clientSuggestions"></datalist>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="visitPhone">Telefon (opcjonalnie)</label>
+          <input type="tel" class="form-control" id="visitPhone" placeholder="np. 600 123 456" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="visitServiceSelect">Wybierz zabieg z listy</label>
+          <select class="form-control" id="visitServiceSelect" onchange="applySelectedService()"></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="visitServiceText">Nazwa zabiegu</label>
+          <input type="text" class="form-control" id="visitServiceText" placeholder="Wpisz lub zmień nazwę zabiegu" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="visitPrice">Cena (zł)</label>
+            <input type="number" step="1" min="0" class="form-control" id="visitPrice" placeholder="np. 350" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="visitDuration">Czas (min)</label>
+            <input type="number" step="5" min="5" class="form-control" id="visitDuration" value="60" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="visitStatus">Status wizyty</label>
+          <select class="form-control" id="visitStatus">
+            <option value="planned">Zaplanowana</option>
+            <option value="done">Odbyta</option>
+            <option value="cancelled">Odwołana</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="visitNotes">Notatki do zabiegu / skóra klientki</label>
+          <textarea class="form-control" id="visitNotes" placeholder="np. parametry, preparaty, zalecenia po zabiegu..."></textarea>
+        </div>
+
+        <button type="submit" class="primary-btn">Zapisz wizytę</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notifications Modal -->
+  <div class="modal-backdrop" id="notifModal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 class="modal-title">Najbliższe wizyty i przypomnienia</h3>
+        <button class="close-btn" onclick="closeModal('notifModal')">×</button>
+      </div>
+      <div id="notifList"></div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 class="modal-title">Ustawienia gabinetu</h3>
+        <button class="close-btn" onclick="closeModal('settingsModal')">×</button>
+      </div>
+
+      <div class="settings-nav">
+        <button type="button" class="pill-tab active" id="pillGeneral" onclick="switchSettingsTab('general')">Gabinet</button>
+        <button type="button" class="pill-tab" id="pillServices" onclick="switchSettingsTab('services')">Cennik i Usługi</button>
+        <button type="button" class="pill-tab" id="pillCloud" onclick="switchSettingsTab('cloud')">Chmura Firebase</button>
+      </div>
+
+      <!-- General Settings -->
+      <div id="settingsGeneralPanel">
+        <div class="form-group">
+          <label class="form-label" for="cfgBrandMain">Nazwa główna (nagłówek)</label>
+          <input type="text" class="form-control" id="cfgBrandMain" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cfgBrandSub">Podpis pod nazwą</label>
+          <input type="text" class="form-control" id="cfgBrandSub" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cfgMonogram">Monogram (1–3 litery)</label>
+          <input type="text" class="form-control" id="cfgMonogram" maxlength="3" />
+        </div>
+        <button type="button" class="primary-btn" onclick="saveGeneralSettings()">Zapisz ustawienia gabinetu</button>
+        <button type="button" class="secondary-btn" onclick="exportBackupJson()">Pobierz kopię zapasową (JSON)</button>
+        <button type="button" class="secondary-btn" onclick="document.getElementById('importFileInput').click()">Wgraj kopię zapasową z pliku</button>
+        <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importBackupJson(event)" />
+      </div>
+
+      <!-- Services Editor -->
+      <div id="settingsServicesPanel" style="display:none;">
+        <div class="help-box">
+          Możesz dowolnie <strong>edytować, dodawać i usuwać</strong> zabiegi. Pojawią się od razu na liście przy dodawaniu wizyty.
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="newServiceName">Nazwa zabiegu</label>
+          <input type="text" class="form-control" id="newServiceName" placeholder="np. Mezoterapia igłowa twarzy" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="newServicePrice">Cena (zł)</label>
+            <input type="number" class="form-control" id="newServicePrice" placeholder="np. 450" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newServiceDuration">Czas (min)</label>
+            <input type="number" class="form-control" id="newServiceDuration" value="60" />
+          </div>
+        </div>
+        <button type="button" class="primary-btn" onclick="addOrUpdateService()">+ Dodaj / Zapisz zabieg</button>
+
+        <div style="margin-top: 16px;" id="servicesEditorList"></div>
+      </div>
+
+      <!-- Cloud Firebase Config -->
+      <div id="settingsCloudPanel" style="display:none;">
+        <div class="help-box">
+          <strong>Darmowy zapis w chmurze (Firebase):</strong>
+          <ol>
+            <li>Wejdź na <strong>console.firebase.google.com</strong> i utwórz darmowy projekt.</li>
+            <li>Włącz <strong>Firestore Database</strong> (w trybie testowym lub z własnymi regułami).</li>
+            <li>W ustawieniach projektu skopiuj obiekt <code>firebaseConfig</code> i wklej poniżej.</li>
+          </ol>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="firebaseDocRoom">Kod Twojego gabinetu (np. nazwa firmy)</label>
+          <input type="text" class="form-control" id="firebaseDocRoom" placeholder="skincare_natalialuzak" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="firebaseConfigInput">Konfiguracja Firebase (JSON lub obiekt JS)</label>
+          <textarea
+            class="form-control"
+            id="firebaseConfigInput"
+            style="min-height:110px; font-family: monospace; font-size: 12px;"
+            placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","appId":"..."}'
+          ></textarea>
+        </div>
+
+        <button type="button" class="primary-btn" onclick="saveCloudConfig()">Połącz i synchronizuj z chmurą</button>
+        <button type="button" class="secondary-btn" onclick="disconnectCloud()">Rozłącz chmurę (zostań przy zapisie lokalnym)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lock Overlay -->
+  <div class="modal-backdrop" id="lockModal">
+    <div class="modal-sheet" style="text-align:center;">
+      <div class="monogram" style="margin: 0 auto 12px; width:56px; height:56px; font-size:24px;">NL</div>
+      <h3 class="modal-title" style="margin-bottom:6px;">Widok zablokowany</h3>
+      <p style="color:var(--text-muted); font-size:14px; margin-bottom:18px;">
+        Skincare NATALIA LUZAK — kliknij poniżej, aby wrócić do kalendarza wizyt.
+      </p>
+      <button type="button" class="primary-btn" onclick="unlockView()">Odblokuj kalendarz</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "skincare_natalialuzak_app_v1";
+
+    const DEFAULT_SERVICES = [
+      { id: "srv-1", name: "Konsultacja kosmetologiczna i plan terapii", price: 150, duration: 40 },
+      { id: "srv-2", name: "Radiofrekwencja mikroigłowa", price: 650, duration: 75 },
+      { id: "srv-3", name: "Mezoterapia igłowa (twarz)", price: 420, duration: 45 },
+      { id: "srv-4", name: "Stymulatory tkankowe", price: 550, duration: 45 },
+      { id: "srv-5", name: "Oczyszczanie wodorowe + infuzja", price: 290, duration: 60 },
+      { id: "srv-6", name: "Peeling kwasowy / bankietowy", price: 240, duration: 45 },
+      { id: "srv-7", name: "Masaż liftingujący / Kobido", price: 260, duration: 60 }
+    ];
+
+    const DEFAULT_STATE = {
+      branding: {
+        mainName: "Skincare",
+        subName: "NATALIA LUZAK",
+        monogram: "NL"
+      },
+      services: DEFAULT_SERVICES,
+      visits: [],
+      clients: [],
+      cloud: {
+        enabled: false,
+        roomId: "skincare_natalialuzak",
+        configJson: ""
+      }
+    };
+
+    let state = loadLocalState();
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth(); // 0-indexed
+    let selectedDateStr = formatDateISO(new Date());
+    let editingServiceId = null;
+    let firestoreDb = null;
+    let firestoreUnsubscribe = null;
+
+    function loadLocalState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+        const parsed = JSON.parse(raw);
+        return {
+          branding: { ...DEFAULT_STATE.branding, ...(parsed.branding || {}) },
+          services: Array.isArray(parsed.services) && parsed.services.length ? parsed.services : [...DEFAULT_SERVICES],
+          visits: Array.isArray(parsed.visits) ? parsed.visits : [],
+          clients: Array.isArray(parsed.clients) ? parsed.clients : [],
+          cloud: { ...DEFAULT_STATE.cloud, ...(parsed.cloud || {}) }
+        };
+      } catch (e) {
+        return JSON.parse(JSON.stringify(DEFAULT_STATE));
+      }
+    }
+
+    function persistLocalState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function saveState(pushCloud = true) {
+      persistLocalState();
+      renderAll();
+      if (pushCloud && state.cloud.enabled && firestoreDb) {
+        pushToFirestore();
+      }
+    }
+
+    function formatDateISO(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const d = String(dateObj.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function parseDateISO(isoStr) {
+      const [y, m, d] = isoStr.split("-").map(Number);
+      return new Date(y, (m || 1) - 1, d || 1);
+    }
+
+    function formatPolishHeading(isoStr) {
+      const todayISO = formatDateISO(new Date());
+      const d = parseDateISO(isoStr);
+      const monthsGen = [
+        "stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca",
+        "lipca", "sierpnia", "września", "października", "listopada", "grudnia"
+      ];
+      const weekdays = [
+        "niedziela", "poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota"
+      ];
+      const prefix = isoStr === todayISO ? "Dziś — " : "";
+      return `${prefix}${d.getDate()} ${monthsGen[d.getMonth()]} (${weekdays[d.getDay()]})`;
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 2400);
+    }
+
+    function switchTab(tab) {
+      const isCal = tab === "calendar";
+      document.getElementById("tabCalendar").classList.toggle("active", isCal);
+      document.getElementById("tabClients").classList.toggle("active", !isCal);
+      document.getElementById("calendarView").style.display = isCal ? "block" : "none";
+      document.getElementById("clientsView").style.display = isCal ? "none" : "block";
+      if (!isCal) renderClients();
+    }
+
+    function changeMonth(delta) {
+      currentMonth += delta;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear -= 1;
+      } else if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear += 1;
+      }
+      renderCalendar();
+    }
+
+    function jumpToToday() {
+      const now = new Date();
+      currentYear = now.getFullYear();
+      currentMonth = now.getMonth();
+      selectedDateStr = formatDateISO(now);
+      renderCalendar();
+      renderSelectedDayVisits();
+    }
+
+    function renderBranding() {
+      document.getElementById("brandName").textContent = state.branding.mainName || "Skincare";
+      document.getElementById("brandSub").textContent = state.branding.subName || "NATALIA LUZAK";
+      const mono = (state.branding.monogram || "NL").toUpperCase();
+      document.getElementById("brandMonogram").textContent = mono;
+      document.getElementById("lockBtn").innerHTML = "↪ Wyloguj";
+
+      const dot = document.getElementById("syncDot");
+      if (state.cloud.enabled) {
+        dot.classList.add("cloud");
+        dot.title = "Połączono z chmurą Firebase";
+      } else {
+        dot.classList.remove("cloud");
+        dot.title = "Zapis lokalny w urządzeniu";
+      }
+    }
+
+    function renderCalendar() {
+      const monthsNom = [
+        "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
+        "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"
+      ];
+      document.getElementById("monthTitle").textContent = `${monthsNom[currentMonth]} ${currentYear}`;
+
+      const grid = document.getElementById("daysGrid");
+      grid.innerHTML = "";
+
+      const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+      // Monday = 0, Sunday = 6
+      let startOffset = firstDayOfMonth.getDay() - 1;
+      if (startOffset < 0) startOffset = 6;
+
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+      const todayISO = formatDateISO(new Date());
+
+      const visitsByDate = {};
+      state.visits.forEach(v => {
+        if (v.status !== "cancelled") {
+          visitsByDate[v.date] = (visitsByDate[v.date] || 0) + 1;
+        }
+      });
+
+      const totalCells = startOffset + daysInMonth <= 35 ? 35 : 42;
+
+      for (let i = 0; i < totalCells; i++) {
+        let cellDate;
+        let isOtherMonth = false;
+
+        if (i < startOffset) {
+          const dayNum = daysInPrevMonth - startOffset + i + 1;
+          cellDate = new Date(currentYear, currentMonth - 1, dayNum);
+          isOtherMonth = true;
+        } else if (i >= startOffset + daysInMonth) {
+          const dayNum = i - (startOffset + daysInMonth) + 1;
+          cellDate = new Date(currentYear, currentMonth + 1, dayNum);
+          isOtherMonth = true;
+        } else {
+          const dayNum = i - startOffset + 1;
+          cellDate = new Date(currentYear, currentMonth, dayNum);
+        }
+
+        const iso = formatDateISO(cellDate);
+        const count = visitsByDate[iso] || 0;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "day-cell";
+        if (isOtherMonth) btn.classList.add("other-month");
+        if (count > 0) btn.classList.add("has-visits");
+        if (iso === todayISO) btn.classList.add("today");
+        if (iso === selectedDateStr) btn.classList.add("selected");
+
+        btn.innerHTML = `
+          <span>${cellDate.getDate()}</span>
+          ${count > 0 ? `<span class="visit-count">${count}</span>` : ""}
+        `;
+
+        btn.onclick = () => {
+          selectedDateStr = iso;
+          currentYear = cellDate.getFullYear();
+          currentMonth = cellDate.getMonth();
+          renderCalendar();
+          renderSelectedDayVisits();
+        };
+
+        grid.appendChild(btn);
+      }
+    }
+
+    function renderSelectedDayVisits() {
+      document.getElementById("selectedDayHeading").textContent = formatPolishHeading(selectedDateStr);
+      const container = document.getElementById("dayVisitsList");
+
+      const dayVisits = state.visits
+        .filter(v => v.date === selectedDateStr)
+        .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+
+      if (!dayVisits.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            Brak wizyt tego dnia.<br />
+            Dodaj pierwszą przyciskiem <strong>+</strong>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = dayVisits.map(v => {
+        const statusClass = v.status === "done" ? "status-done" : v.status === "cancelled" ? "status-cancelled" : "";
+        const statusLabel = v.status === "done" ? "✓ Odbyta" : v.status === "cancelled" ? "✕ Odwołana" : "Zaplanowana";
+        const phoneClean = (v.phone || "").replace(/[^\d+]/g, "");
+
+        return `
+          <div class="visit-card ${statusClass}">
+            <div class="visit-top">
+              <span class="visit-time-badge">🕒 ${v.time || "--:--"} (${v.duration || 60} min) · ${statusLabel}</span>
+              <span class="visit-price">${v.price ? `${v.price} zł` : ""}</span>
+            </div>
+            <div class="visit-client">${escapeHtml(v.clientName)}</div>
+            <div class="visit-service">${escapeHtml(v.service)}</div>
+            ${v.notes ? `<div class="visit-notes">📝 ${escapeHtml(v.notes)}</div>` : ""}
+            <div class="visit-actions">
+              ${phoneClean ? `<a class="mini-btn" href="tel:${phoneClean}">📞 Zadzwoń</a>` : ""}
+              ${phoneClean ? `<button type="button" class="mini-btn" onclick="sendReminderSms('${v.id}')">💬 SMS</button>` : ""}
+              <button type="button" class="mini-btn" onclick="openVisitModal('${v.id}')">Edytuj</button>
+              <button type="button" class="mini-btn danger" onclick="deleteVisit('${v.id}')">Usuń</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderClients() {
+      const query = (document.getElementById("clientSearch").value || "").trim().toLowerCase();
+      document.getElementById("clientsCount").textContent = state.clients.length;
+
+      const list = document.getElementById("clientsList");
+      const filtered = state.clients.filter(c => {
+        const hay = `${c.name || ""} ${c.phone || ""} ${c.notes || ""}`.toLowerCase();
+        return hay.includes(query);
+      });
+
+      if (!filtered.length) {
+        list.innerHTML = `
+          <div class="empty-state">
+            ${state.clients.length === 0
+              ? "Brak zapisanych klientek. Dodaj pierwszą wizytę przyciskiem <strong>+</strong>, a kartoteka utworzy się automatycznie."
+              : "Nie znaleziono klientek pasujących do wyszukiwania."}
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = filtered.map(c => {
+        const clientVisits = state.visits.filter(v => v.clientName.toLowerCase() === (c.name || "").toLowerCase());
+        const phoneClean = (c.phone || "").replace(/[^\d+]/g, "");
+        return `
+          <div class="client-card">
+            <div class="visit-top">
+              <div class="client-name">${escapeHtml(c.name)}</div>
+              <span class="visit-time-badge">Wizyt: ${clientVisits.length}</span>
+            </div>
+            <div class="client-meta">${c.phone ? `📞 ${escapeHtml(c.phone)}` : "Brak numeru telefonu"}</div>
+            ${c.notes ? `<div class="client-note">📝 ${escapeHtml(c.notes)}</div>` : ""}
+            <div class="visit-actions">
+              ${phoneClean ? `<a class="mini-btn" href="tel:${phoneClean}">Zadzwoń</a>` : ""}
+              <button type="button" class="mini-btn" onclick="quickBookClient('${escapeAttr(c.name)}', '${escapeAttr(c.phone || "")}')">+ Umów wizytę</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderNotificationsBadge() {
+      const todayISO = formatDateISO(new Date());
+      const upcoming = state.visits.filter(v => v.date >= todayISO && v.status === "planned");
+      document.getElementById("notifDot").classList.toggle("active", upcoming.length > 0);
+    }
+
+    function openNotifications() {
+      const todayISO = formatDateISO(new Date());
+      const upcoming = state.visits
+        .filter(v => v.date >= todayISO && v.status !== "cancelled")
+        .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
+        .slice(0, 12);
+
+      const box = document.getElementById("notifList");
+      if (!upcoming.length) {
+        box.innerHTML = `<div class="empty-state">Brak nadchodzących zaplanowanych wizyt.</div>`;
+      } else {
+        box.innerHTML = upcoming.map(v => `
+          <div class="service-item">
+            <div>
+              <div class="service-item-title">${v.date} · ${v.time} — ${escapeHtml(v.clientName)}</div>
+              <div class="service-item-sub">${escapeHtml(v.service)}${v.price ? ` (${v.price} zł)` : ""}</div>
+            </div>
+            <button type="button" class="mini-btn" onclick="closeModal('notifModal'); selectedDateStr='${v.date}'; renderCalendar(); renderSelectedDayVisits();">Pokaż</button>
+          </div>
+        `).join("");
+      }
+      openModal("notifModal");
+    }
+
+    function populateServiceDropdown(selectedName = "") {
+      const select = document.getElementById("visitServiceSelect");
+      select.innerHTML = `<option value="">-- Wybierz zabieg z cennika lub wpisz własny --</option>` +
+        state.services.map(s => `<option value="${escapeAttr(s.name)}" data-price="${s.price || ""}" data-duration="${s.duration || 60}">${escapeHtml(s.name)} (${s.price || 0} zł)</option>`).join("");
+
+      if (selectedName) {
+        const match = Array.from(select.options).find(o => o.value === selectedName);
+        if (match) select.value = selectedName;
+      }
+    }
+
+    function applySelectedService() {
+      const select = document.getElementById("visitServiceSelect");
+      const opt = select.options[select.selectedIndex];
+      if (!opt || !opt.value) return;
+      document.getElementById("visitServiceText").value = opt.value;
+      const price = opt.getAttribute("data-price");
+      const dur = opt.getAttribute("data-duration");
+      if (price) document.getElementById("visitPrice").value = price;
+      if (dur) document.getElementById("visitDuration").value = dur;
+    }
+
+    function openVisitModal(visitId = null) {
+      document.getElementById("visitForm").reset();
+      document.getElementById("visitId").value = "";
+      document.getElementById("visitDate").value = selectedDateStr;
+      document.getElementById("visitTime").value = "10:00";
+      document.getElementById("visitDuration").value = "60";
+      document.getElementById("visitStatus").value = "planned";
+      document.getElementById("visitModalTitle").textContent = "Nowa wizyta";
+
+      const dl = document.getElementById("clientSuggestions");
+      dl.innerHTML = state.clients.map(c => `<option value="${escapeAttr(c.name)}"></option>`).join("");
+
+      if (visitId) {
+        const v = state.visits.find(item => item.id === visitId);
+        if (v) {
+          document.getElementById("visitModalTitle").textContent = "Edytuj wizytę";
+          document.getElementById("visitId").value = v.id;
+          document.getElementById("visitDate").value = v.date;
+          document.getElementById("visitTime").value = v.time;
+          document.getElementById("visitClient").value = v.clientName;
+          document.getElementById("visitPhone").value = v.phone || "";
+          document.getElementById("visitServiceText").value = v.service;
+          document.getElementById("visitPrice").value = v.price || "";
+          document.getElementById("visitDuration").value = v.duration || 60;
+          document.getElementById("visitStatus").value = v.status || "planned";
+          document.getElementById("visitNotes").value = v.notes || "";
+          populateServiceDropdown(v.service);
+        }
+      } else {
+        populateServiceDropdown("");
+      }
+
+      openModal("visitModal");
+    }
+
+    function quickBookClient(name, phone) {
+      switchTab("calendar");
+      openVisitModal();
+      document.getElementById("visitClient").value = name;
+      document.getElementById("visitPhone").value = phone;
+    }
+
+    function saveVisit(e) {
+      e.preventDefault();
+      const id = document.getElementById("visitId").value || `vis-${Date.now()}`;
+      const date = document.getElementById("visitDate").value;
+      const time = document.getElementById("visitTime").value;
+      const clientName = document.getElementById("visitClient").value.trim();
+      const phone = document.getElementById("visitPhone").value.trim();
+      const service = document.getElementById("visitServiceText").value.trim();
+      const price = document.getElementById("visitPrice").value ? Number(document.getElementById("visitPrice").value) : "";
+      const duration = Number(document.getElementById("visitDuration").value) || 60;
+      const status = document.getElementById("visitStatus").value;
+      const notes = document.getElementById("visitNotes").value.trim();
+
+      const visitObj = { id, date, time, clientName, phone, service, price, duration, status, notes };
+
+      const existingIdx = state.visits.findIndex(v => v.id === id);
+      if (existingIdx >= 0) {
+        state.visits[existingIdx] = visitObj;
+      } else {
+        state.visits.push(visitObj);
+      }
+
+      // Sync client directory
+      const cIdx = state.clients.findIndex(c => c.name.toLowerCase() === clientName.toLowerCase());
+      if (cIdx >= 0) {
+        if (phone) state.clients[cIdx].phone = phone;
+        if (notes) state.clients[cIdx].notes = notes;
+      } else if (clientName) {
+        state.clients.push({
+          id: `cli-${Date.now()}`,
+          name: clientName,
+          phone,
+          notes
+        });
+      }
+
+      selectedDateStr = date;
+      const dt = parseDateISO(date);
+      currentYear = dt.getFullYear();
+      currentMonth = dt.getMonth();
+
+      closeModal("visitModal");
+      saveState(true);
+      showToast("Zapisano wizytę");
+    }
+
+    function deleteVisit(id) {
+      if (!confirm("Czy na pewno usunąć tę wizytę?")) return;
+      state.visits = state.visits.filter(v => v.id !== id);
+      saveState(true);
+      showToast("Usunięto wizytę");
+    }
+
+    function sendReminderSms(visitId) {
+      const v = state.visits.find(item => item.id === visitId);
+      if (!v || !v.phone) return;
+      const cleanPhone = v.phone.replace(/[^\d+]/g, "");
+      const text = encodeURIComponent(`Dzień dobry ${v.clientName}, przypominamy o wizycie (${v.service}) w dniu ${v.date} o godz. ${v.time} — ${state.branding.mainName} ${state.branding.subName}.`);
+      window.location.href = `sms:${cleanPhone}?body=${text}`;
+    }
+
+    /* Settings & Services CRUD */
+    function openSettings(tab = "general") {
+      document.getElementById("cfgBrandMain").value = state.branding.mainName;
+      document.getElementById("cfgBrandSub").value = state.branding.subName;
+      document.getElementById("cfgMonogram").value = state.branding.monogram;
+      document.getElementById("firebaseDocRoom").value = state.cloud.roomId || "skincare_natalialuzak";
+      document.getElementById("firebaseConfigInput").value = state.cloud.configJson || "";
+      editingServiceId = null;
+      resetServiceForm();
+      renderServicesEditor();
+      switchSettingsTab(tab);
+      openModal("settingsModal");
+    }
+
+    function switchSettingsTab(tab) {
+      document.getElementById("pillGeneral").classList.toggle("active", tab === "general");
+      document.getElementById("pillServices").classList.toggle("active", tab === "services");
+      document.getElementById("pillCloud").classList.toggle("active", tab === "cloud");
+
+      document.getElementById("settingsGeneralPanel").style.display = tab === "general" ? "block" : "none";
+      document.getElementById("settingsServicesPanel").style.display = tab === "services" ? "block" : "none";
+      document.getElementById("settingsCloudPanel").style.display = tab === "cloud" ? "block" : "none";
+    }
+
+    function saveGeneralSettings() {
+      state.branding.mainName = document.getElementById("cfgBrandMain").value.trim() || "Skincare";
+      state.branding.subName = document.getElementById("cfgBrandSub").value.trim() || "NATALIA LUZAK";
+      state.branding.monogram = (document.getElementById("cfgMonogram").value.trim() || "NL").toUpperCase();
+      saveState(true);
+      showToast("Zapisano ustawienia gabinetu");
+    }
+
+    function resetServiceForm() {
+      editingServiceId = null;
+      document.getElementById("newServiceName").value = "";
+      document.getElementById("newServicePrice").value = "";
+      document.getElementById("newServiceDuration").value = "60";
+    }
+
+    function addOrUpdateService() {
+      const name = document.getElementById("newServiceName").value.trim();
+      const price = Number(document.getElementById("newServicePrice").value) || 0;
+      const duration = Number(document.getElementById("newServiceDuration").value) || 60;
+      if (!name) {
+        showToast("Podaj nazwę zabiegu");
+        return;
+      }
+
+      if (editingServiceId) {
+        const idx = state.services.findIndex(s => s.id === editingServiceId);
+        if (idx >= 0) {
+          state.services[idx] = { id: editingServiceId, name, price, duration };
+        }
+      } else {
+        state.services.push({ id: `srv-${Date.now()}`, name, price, duration });
+      }
+
+      resetServiceForm();
+      renderServicesEditor();
+      saveState(true);
+      showToast("Zapisano cennik zabiegów");
+    }
+
+    function editService(id) {
+      const s = state.services.find(item => item.id === id);
+      if (!s) return;
+      editingServiceId = s.id;
+      document.getElementById("newServiceName").value = s.name;
+      document.getElementById("newServicePrice").value = s.price;
+      document.getElementById("newServiceDuration").value = s.duration;
+    }
+
+    function deleteService(id) {
+      state.services = state.services.filter(s => s.id !== id);
+      renderServicesEditor();
+      saveState(true);
+      showToast("Usunięto zabieg");
+    }
+
+    function renderServicesEditor() {
+      const box = document.getElementById("servicesEditorList");
+      box.innerHTML = state.services.map(s => `
+        <div class="service-item">
+          <div>
+            <div class="service-item-title">${escapeHtml(s.name)}</div>
+            <div class="service-item-sub">${s.price} zł · ${s.duration} min</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="mini-btn" onclick="editService('${s.id}')">Edytuj</button>
+            <button type="button" class="mini-btn danger" onclick="deleteService('${s.id}')">Usuń</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    /* Backup JSON */
+    function exportBackupJson() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `skincare-kopia-${formatDateISO(new Date())}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Pobrano kopię zapasową");
+    }
+
+    function importBackupJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const imported = JSON.parse(reader.result);
+          if (imported.visits) state.visits = imported.visits;
+          if (imported.clients) state.clients = imported.clients;
+          if (imported.services && imported.services.length) state.services = imported.services;
+          if (imported.branding) state.branding = { ...state.branding, ...imported.branding };
+          saveState(true);
+          showToast("Przywrócono dane z pliku");
+        } catch (err) {
+          showToast("Nieprawidłowy plik kopii zapasowej");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /* Firebase Cloud Sync (dynamic module load) */
+    function parseFirebaseConfig(rawText) {
+      let clean = (rawText || "").trim();
+      if (!clean) return null;
+      // Allow pasting `const firebaseConfig = { ... };`
+      clean = clean.replace(/^[^=]*=\s*/, "").replace(/;\s*$/, "");
+      // Convert unquoted keys to JSON if needed
+      try {
+        return JSON.parse(clean);
+      } catch (_) {
+        const jsonLike = clean
+          .replace(/(\w+)\s*:/g, '"$1":')
+          .replace(/'/g, '"')
+          .replace(/,\s*}/g, "}");
+        return JSON.parse(jsonLike);
+      }
+    }
+
+    async function saveCloudConfig() {
+      const roomId = (document.getElementById("firebaseDocRoom").value || "skincare_natalialuzak").trim();
+      const rawCfg = document.getElementById("firebaseConfigInput").value.trim();
+
+      try {
+        const cfg = parseFirebaseConfig(rawCfg);
+        if (!cfg || !cfg.apiKey || !cfg.projectId) {
+          showToast("Brak apiKey lub projectId w konfiguracji");
+          return;
+        }
+        state.cloud.enabled = true;
+        state.cloud.roomId = roomId;
+        state.cloud.configJson = JSON.stringify(cfg, null, 2);
+        persistLocalState();
+        await initFirebaseSync(cfg, roomId);
+        renderBranding();
+        showToast("Połączono z chmurą Firebase");
+      } catch (e) {
+        showToast("Błąd formatu konfiguracji Firebase");
+      }
+    }
+
+    function disconnectCloud() {
+      if (firestoreUnsubscribe) {
+        firestoreUnsubscribe();
+        firestoreUnsubscribe = null;
+      }
+      firestoreDb = null;
+      state.cloud.enabled = false;
+      persistLocalState();
+      renderBranding();
+      showToast("Wyłączono synchronizację z chmurą");
+    }
+
+    async function initFirebaseSync(cfg, roomId) {
+      try {
+        const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js");
+        const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js");
+
+        const appName = "skincareApp";
+        const existingApp = getApps().find(a => a.name === appName);
+        const app = existingApp || initializeApp(cfg, appName);
+        const db = getFirestore(app);
+        firestoreDb = { db, doc, setDoc };
+
+        const docRef = doc(db, "salons", roomId);
+
+        if (firestoreUnsubscribe) firestoreUnsubscribe();
+        firestoreUnsubscribe = onSnapshot(docRef, (snap) => {
+          if (snap.exists()) {
+            const remote = snap.data();
+            if (remote.updatedAt && remote.updatedAt > (state._lastUpdated || 0)) {
+              state.visits = remote.visits || state.visits;
+              state.clients = remote.clients || state.clients;
+              state.services = (remote.services && remote.services.length) ? remote.services : state.services;
+              state.branding = { ...state.branding, ...(remote.branding || {}) };
+              state._lastUpdated = remote.updatedAt;
+              persistLocalState();
+              renderAll();
+            }
+          } else {
+            pushToFirestore();
+          }
+        });
+
+        await pushToFirestore();
+      } catch (err) {
+        showToast("Nie udało się połączyć z Firestore");
+      }
+    }
+
+    async function pushToFirestore() {
+      if (!firestoreDb || !state.cloud.enabled) return;
+      try {
+        const nowTs = Date.now();
+        state._lastUpdated = nowTs;
+        const ref = firestoreDb.doc(firestoreDb.db, "salons", state.cloud.roomId || "skincare_natalialuzak");
+        await firestoreDb.setDoc(ref, {
+          branding: state.branding,
+          services: state.services,
+          visits: state.visits,
+          clients: state.clients,
+          updatedAt: nowTs
+        }, { merge: true });
+      } catch (e) {
+        // silent fail if offline
+      }
+    }
+
+    /* Lock & Modals */
+    function toggleLock() {
+      openModal("lockModal");
+    }
+
+    function unlockView() {
+      closeModal("lockModal");
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add("open");
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("open");
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function escapeAttr(str) {
+      return escapeHtml(str).replace(/'/g, "&#39;");
+    }
+
+    function renderAll() {
+      renderBranding();
+      renderCalendar();
+      renderSelectedDayVisits();
+      renderClients();
+      renderNotificationsBadge();
+    }
+
+    // Boot
+    renderAll();
+    if (state.cloud.enabled && state.cloud.configJson) {
+      try {
+        const cfg = parseFirebaseConfig(state.cloud.configJson);
+        if (cfg && cfg.apiKey) initFirebaseSync(cfg, state.cloud.roomId);
+      } catch (_) {}
+    }
+  </script>
+</body>
+</html>
