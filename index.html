@@ -29,6 +29,8 @@
       --border-light: #ede6d6;
       --danger: #b83b3b;
       --success: #2c7a52;
+      --off-bg: #ebe4d8;
+      --off-text: #6b5d4b;
       --radius-sm: 10px;
       --radius-md: 14px;
       --radius-lg: 20px;
@@ -322,6 +324,12 @@
       font-weight: 600;
     }
 
+    .day-cell.day-off {
+      background: var(--off-bg);
+      color: var(--off-text);
+      border: 1px dashed var(--gold-border);
+    }
+
     .day-cell.today {
       border: 2px solid var(--gold-primary);
       box-shadow: inset 0 0 0 2px var(--bg-page);
@@ -334,6 +342,10 @@
       font-weight: 700;
       border-color: var(--gold-primary);
       box-shadow: 0 4px 12px rgba(166, 124, 46, 0.28);
+    }
+
+    .day-cell.selected.day-off {
+      border-style: solid;
     }
 
     .day-cell.selected.today {
@@ -350,7 +362,18 @@
       color: var(--gold-dark);
     }
 
-    .day-cell.selected .visit-count {
+    .off-badge {
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: var(--off-text);
+      margin-top: 2px;
+      line-height: 1;
+    }
+
+    .day-cell.selected .visit-count,
+    .day-cell.selected .off-badge {
       color: #fff8e7;
     }
 
@@ -381,7 +404,15 @@
       margin: 0;
     }
 
+    .day-actions-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
     .today-jump-btn {
+      font-family: inherit;
       font-size: 12px;
       font-weight: 600;
       color: var(--gold-dark);
@@ -390,6 +421,37 @@
       padding: 5px 10px;
       border-radius: 999px;
       cursor: pointer;
+    }
+
+    .today-jump-btn.active-off {
+      background: var(--off-bg);
+      color: var(--off-text);
+      border-color: var(--gold-dark);
+    }
+
+    .off-banner {
+      background: var(--bg-cream);
+      border: 1px solid var(--gold-border);
+      border-left: 4px solid var(--gold-dark);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .off-banner-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .off-banner-sub {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
     }
 
     .empty-state {
@@ -856,8 +918,12 @@
       <div class="day-section">
         <div class="day-section-header">
           <h2 class="day-heading" id="selectedDayHeading">Dziś — 24 listopada (wtorek)</h2>
-          <button class="today-jump-btn" onclick="jumpToToday()">Dziś</button>
+          <div class="day-actions-row">
+            <button type="button" class="today-jump-btn" id="dayOffToggleBtn" onclick="toggleDayOff()">Dzień wolny</button>
+            <button type="button" class="today-jump-btn" onclick="jumpToToday()">Dziś</button>
+          </div>
         </div>
+        <div id="dayOffBanner"></div>
         <div id="dayVisitsList"></div>
       </div>
     </section>
@@ -947,6 +1013,30 @@
         </div>
 
         <button type="submit" class="primary-btn">Zapisz wizytę</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Day Off Modal -->
+  <div class="modal-backdrop" id="dayOffModal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 class="modal-title" id="dayOffModalTitle">Oznacz dzień jako wolny</h3>
+        <button class="close-btn" onclick="closeModal('dayOffModal')">×</button>
+      </div>
+
+      <form id="dayOffForm" onsubmit="saveDayOff(event)">
+        <div class="form-group">
+          <label class="form-label" for="dayOffDate">Data</label>
+          <input type="date" class="form-control" id="dayOffDate" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="dayOffReason">Powód / notatka (opcjonalnie)</label>
+          <input type="text" class="form-control" id="dayOffReason" placeholder="np. Urlop, wyjazd, szkolenie, dzień wolny" />
+        </div>
+
+        <button type="submit" class="primary-btn">Zapisz jako dzień wolny</button>
       </form>
     </div>
   </div>
@@ -1089,6 +1179,7 @@
       services: DEFAULT_SERVICES,
       visits: [],
       clients: [],
+      dayOffs: {},
       cloud: {
         enabled: false,
         roomId: "skincare_natalialuzak",
@@ -1114,6 +1205,7 @@
           services: Array.isArray(parsed.services) && parsed.services.length ? parsed.services : [...DEFAULT_SERVICES],
           visits: Array.isArray(parsed.visits) ? parsed.visits : [],
           clients: Array.isArray(parsed.clients) ? parsed.clients : [],
+          dayOffs: parsed.dayOffs && typeof parsed.dayOffs === "object" ? parsed.dayOffs : {},
           cloud: { ...DEFAULT_STATE.cloud, ...(parsed.cloud || {}) }
         };
       } catch (e) {
@@ -1196,6 +1288,51 @@
       renderSelectedDayVisits();
     }
 
+    function getDayOffInfo(dateStr) {
+      return state.dayOffs && state.dayOffs[dateStr] ? state.dayOffs[dateStr] : null;
+    }
+
+    function toggleDayOff() {
+      const existing = getDayOffInfo(selectedDateStr);
+      if (existing) {
+        delete state.dayOffs[selectedDateStr];
+        saveState(true);
+        showToast("Usunięto oznaczenie dnia wolnego");
+        return;
+      }
+      document.getElementById("dayOffDate").value = selectedDateStr;
+      document.getElementById("dayOffReason").value = "";
+      openModal("dayOffModal");
+    }
+
+    function saveDayOff(e) {
+      e.preventDefault();
+      const dateStr = document.getElementById("dayOffDate").value || selectedDateStr;
+      const reason = document.getElementById("dayOffReason").value.trim();
+
+      state.dayOffs[dateStr] = {
+        reason: reason || "Dzień wolny",
+        createdAt: Date.now()
+      };
+
+      selectedDateStr = dateStr;
+      const dt = parseDateISO(dateStr);
+      currentYear = dt.getFullYear();
+      currentMonth = dt.getMonth();
+
+      closeModal("dayOffModal");
+      saveState(true);
+      showToast("Oznaczono dzień jako wolny");
+    }
+
+    function removeDayOffByDate(dateStr) {
+      if (state.dayOffs && state.dayOffs[dateStr]) {
+        delete state.dayOffs[dateStr];
+        saveState(true);
+        showToast("Przywrócono dostępność dnia");
+      }
+    }
+
     function renderBranding() {
       document.getElementById("brandName").textContent = state.branding.mainName || "Skincare";
       document.getElementById("brandSub").textContent = state.branding.subName || "NATALIA LUZAK";
@@ -1260,18 +1397,21 @@
 
         const iso = formatDateISO(cellDate);
         const count = visitsByDate[iso] || 0;
+        const dayOff = getDayOffInfo(iso);
 
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "day-cell";
         if (isOtherMonth) btn.classList.add("other-month");
         if (count > 0) btn.classList.add("has-visits");
+        if (dayOff) btn.classList.add("day-off");
         if (iso === todayISO) btn.classList.add("today");
         if (iso === selectedDateStr) btn.classList.add("selected");
 
         btn.innerHTML = `
           <span>${cellDate.getDate()}</span>
           ${count > 0 ? `<span class="visit-count">${count}</span>` : ""}
+          ${dayOff ? `<span class="off-badge">WOLNE</span>` : ""}
         `;
 
         btn.onclick = () => {
@@ -1288,6 +1428,29 @@
 
     function renderSelectedDayVisits() {
       document.getElementById("selectedDayHeading").textContent = formatPolishHeading(selectedDateStr);
+
+      const dayOff = getDayOffInfo(selectedDateStr);
+      const toggleBtn = document.getElementById("dayOffToggleBtn");
+      const bannerEl = document.getElementById("dayOffBanner");
+
+      if (dayOff) {
+        toggleBtn.textContent = "Usuń wolne";
+        toggleBtn.classList.add("active-off");
+        bannerEl.innerHTML = `
+          <div class="off-banner">
+            <div>
+              <div class="off-banner-title">🌿 Dzień wolny</div>
+              <div class="off-banner-sub">${escapeHtml(dayOff.reason || "Dzień wolny")}</div>
+            </div>
+            <button type="button" class="mini-btn" onclick="removeDayOffByDate('${selectedDateStr}')">Cofnij</button>
+          </div>
+        `;
+      } else {
+        toggleBtn.textContent = "Dzień wolny";
+        toggleBtn.classList.remove("active-off");
+        bannerEl.innerHTML = "";
+      }
+
       const container = document.getElementById("dayVisitsList");
 
       const dayVisits = state.visits
@@ -1297,8 +1460,9 @@
       if (!dayVisits.length) {
         container.innerHTML = `
           <div class="empty-state">
-            Brak wizyt tego dnia.<br />
-            Dodaj pierwszą przyciskiem <strong>+</strong>
+            ${dayOff
+              ? "Ten dzień jest oznaczony jako wolny. Możesz też dodać wizytę przyciskiem <strong>+</strong>."
+              : "Brak wizyt tego dnia.<br />Dodaj pierwszą przyciskiem <strong>+</strong>"}
           </div>
         `;
         return;
@@ -1642,6 +1806,7 @@
           if (imported.visits) state.visits = imported.visits;
           if (imported.clients) state.clients = imported.clients;
           if (imported.services && imported.services.length) state.services = imported.services;
+          if (imported.dayOffs && typeof imported.dayOffs === "object") state.dayOffs = imported.dayOffs;
           if (imported.branding) state.branding = { ...state.branding, ...imported.branding };
           saveState(true);
           showToast("Przywrócono dane z pliku");
@@ -1725,6 +1890,7 @@
               state.visits = remote.visits || state.visits;
               state.clients = remote.clients || state.clients;
               state.services = (remote.services && remote.services.length) ? remote.services : state.services;
+              state.dayOffs = (remote.dayOffs && typeof remote.dayOffs === "object") ? remote.dayOffs : state.dayOffs;
               state.branding = { ...state.branding, ...(remote.branding || {}) };
               state._lastUpdated = remote.updatedAt;
               persistLocalState();
@@ -1752,6 +1918,7 @@
           services: state.services,
           visits: state.visits,
           clients: state.clients,
+          dayOffs: state.dayOffs,
           updatedAt: nowTs
         }, { merge: true });
       } catch (e) {
