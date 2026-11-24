@@ -4,9 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#fbf9f5" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Skincare NL" />
+  <link id="pwaManifestLink" rel="manifest" />
   <title>Skincare NATALIA LUZAK — Kalendarz Wizyt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -144,6 +146,11 @@
     .sync-dot.cloud {
       background: #2b7de9;
       box-shadow: 0 0 0 3px rgba(43, 125, 233, 0.16);
+    }
+
+    .sync-dot.pending {
+      background: #e08a1e;
+      box-shadow: 0 0 0 3px rgba(224, 138, 30, 0.2);
     }
 
     .icon-circle-btn {
@@ -835,6 +842,20 @@
       padding-left: 18px;
     }
 
+    .sync-status-card {
+      background: var(--bg-page);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    .sync-status-card strong {
+      color: var(--text-main);
+    }
+
     .toast {
       position: fixed;
       left: 50%;
@@ -1063,7 +1084,7 @@
       <div class="settings-nav">
         <button type="button" class="pill-tab active" id="pillGeneral" onclick="switchSettingsTab('general')">Gabinet</button>
         <button type="button" class="pill-tab" id="pillServices" onclick="switchSettingsTab('services')">Cennik i Usługi</button>
-        <button type="button" class="pill-tab" id="pillCloud" onclick="switchSettingsTab('cloud')">Chmura Firebase</button>
+        <button type="button" class="pill-tab" id="pillCloud" onclick="switchSettingsTab('cloud')">Chmura i PWA</button>
       </div>
 
       <!-- General Settings -->
@@ -1111,14 +1132,16 @@
         <div style="margin-top: 16px;" id="servicesEditorList"></div>
       </div>
 
-      <!-- Cloud Firebase Config -->
+      <!-- Cloud Firebase & Offline Queue Config -->
       <div id="settingsCloudPanel" style="display:none;">
+        <div class="sync-status-card" id="syncQueueSummary"></div>
+
         <div class="help-box">
-          <strong>Darmowy zapis w chmurze (Firebase):</strong>
+          <strong>Tryb offline (PWA) + kolejka chmury:</strong>
           <ol>
-            <li>Wejdź na <strong>console.firebase.google.com</strong> i utwórz darmowy projekt.</li>
-            <li>Włącz <strong>Firestore Database</strong> (w trybie testowym lub z własnymi regułami).</li>
-            <li>W ustawieniach projektu skopiuj obiekt <code>firebaseConfig</code> i wklej poniżej.</li>
+            <li>Uruchomiona przez <code>http://</code> lub <code>https://</code> aplikacja zapisuje pliki w pamięci przeglądarki do pracy offline.</li>
+            <li>Zmiany zapisują się od razu lokalnie i trafiają do kolejki synchronizacji, gdy brakuje sieci.</li>
+            <li>Po powrocie internetu kolejka wysyła zaległe zmiany do Firestore automatycznie.</li>
           </ol>
         </div>
 
@@ -1138,6 +1161,7 @@
         </div>
 
         <button type="button" class="primary-btn" onclick="saveCloudConfig()">Połącz i synchronizuj z chmurą</button>
+        <button type="button" class="secondary-btn" onclick="flushSyncQueue(true)">Wymuś synchronizację kolejki teraz</button>
         <button type="button" class="secondary-btn" onclick="disconnectCloud()">Rozłącz chmurę (zostań przy zapisie lokalnym)</button>
       </div>
     </div>
@@ -1184,7 +1208,10 @@
         enabled: false,
         roomId: "skincare_natalialuzak",
         configJson: ""
-      }
+      },
+      syncQueue: [],
+      _lastUpdated: 0,
+      _lastSyncedAt: 0
     };
 
     let state = loadLocalState();
@@ -1194,6 +1221,7 @@
     let editingServiceId = null;
     let firestoreDb = null;
     let firestoreUnsubscribe = null;
+    let isFlushingQueue = false;
 
     function loadLocalState() {
       try {
@@ -1206,7 +1234,10 @@
           visits: Array.isArray(parsed.visits) ? parsed.visits : [],
           clients: Array.isArray(parsed.clients) ? parsed.clients : [],
           dayOffs: parsed.dayOffs && typeof parsed.dayOffs === "object" ? parsed.dayOffs : {},
-          cloud: { ...DEFAULT_STATE.cloud, ...(parsed.cloud || {}) }
+          cloud: { ...DEFAULT_STATE.cloud, ...(parsed.cloud || {}) },
+          syncQueue: Array.isArray(parsed.syncQueue) ? parsed.syncQueue : [],
+          _lastUpdated: Number(parsed._lastUpdated) || 0,
+          _lastSyncedAt: Number(parsed._lastSyncedAt) || 0
         };
       } catch (e) {
         return JSON.parse(JSON.stringify(DEFAULT_STATE));
@@ -1217,11 +1248,26 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
 
-    function saveState(pushCloud = true) {
+    function enqueueCloudSync(reason = "update") {
+      if (!state.cloud.enabled) return;
+      const nowTs = Date.now();
+      state._lastUpdated = nowTs;
+      if (!Array.isArray(state.syncQueue)) state.syncQueue = [];
+      state.syncQueue.push({
+        id: `q-${nowTs}-${Math.random().toString(36).slice(2, 6)}`,
+        reason,
+        queuedAt: nowTs
+      });
+    }
+
+    function saveState(pushCloud = true, reason = "update") {
+      if (pushCloud && state.cloud.enabled) {
+        enqueueCloudSync(reason);
+      }
       persistLocalState();
       renderAll();
-      if (pushCloud && state.cloud.enabled && firestoreDb) {
-        pushToFirestore();
+      if (pushCloud && state.cloud.enabled) {
+        flushSyncQueue(false);
       }
     }
 
@@ -1279,698 +1325,4 @@
       renderCalendar();
     }
 
-    function jumpToToday() {
-      const now = new Date();
-      currentYear = now.getFullYear();
-      currentMonth = now.getMonth();
-      selectedDateStr = formatDateISO(now);
-      renderCalendar();
-      renderSelectedDayVisits();
-    }
-
-    function getDayOffInfo(dateStr) {
-      return state.dayOffs && state.dayOffs[dateStr] ? state.dayOffs[dateStr] : null;
-    }
-
-    function toggleDayOff() {
-      const existing = getDayOffInfo(selectedDateStr);
-      if (existing) {
-        delete state.dayOffs[selectedDateStr];
-        saveState(true);
-        showToast("Usunięto oznaczenie dnia wolnego");
-        return;
-      }
-      document.getElementById("dayOffDate").value = selectedDateStr;
-      document.getElementById("dayOffReason").value = "";
-      openModal("dayOffModal");
-    }
-
-    function saveDayOff(e) {
-      e.preventDefault();
-      const dateStr = document.getElementById("dayOffDate").value || selectedDateStr;
-      const reason = document.getElementById("dayOffReason").value.trim();
-
-      state.dayOffs[dateStr] = {
-        reason: reason || "Dzień wolny",
-        createdAt: Date.now()
-      };
-
-      selectedDateStr = dateStr;
-      const dt = parseDateISO(dateStr);
-      currentYear = dt.getFullYear();
-      currentMonth = dt.getMonth();
-
-      closeModal("dayOffModal");
-      saveState(true);
-      showToast("Oznaczono dzień jako wolny");
-    }
-
-    function removeDayOffByDate(dateStr) {
-      if (state.dayOffs && state.dayOffs[dateStr]) {
-        delete state.dayOffs[dateStr];
-        saveState(true);
-        showToast("Przywrócono dostępność dnia");
-      }
-    }
-
-    function renderBranding() {
-      document.getElementById("brandName").textContent = state.branding.mainName || "Skincare";
-      document.getElementById("brandSub").textContent = state.branding.subName || "NATALIA LUZAK";
-      const mono = (state.branding.monogram || "NL").toUpperCase();
-      document.getElementById("brandMonogram").textContent = mono;
-      document.getElementById("lockBtn").innerHTML = "↪ Wyloguj";
-
-      const dot = document.getElementById("syncDot");
-      if (state.cloud.enabled) {
-        dot.classList.add("cloud");
-        dot.title = "Połączono z chmurą Firebase";
-      } else {
-        dot.classList.remove("cloud");
-        dot.title = "Zapis lokalny w urządzeniu";
-      }
-    }
-
-    function renderCalendar() {
-      const monthsNom = [
-        "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
-        "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"
-      ];
-      document.getElementById("monthTitle").textContent = `${monthsNom[currentMonth]} ${currentYear}`;
-
-      const grid = document.getElementById("daysGrid");
-      grid.innerHTML = "";
-
-      const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-      // Monday = 0, Sunday = 6
-      let startOffset = firstDayOfMonth.getDay() - 1;
-      if (startOffset < 0) startOffset = 6;
-
-      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-      const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
-      const todayISO = formatDateISO(new Date());
-
-      const visitsByDate = {};
-      state.visits.forEach(v => {
-        if (v.status !== "cancelled") {
-          visitsByDate[v.date] = (visitsByDate[v.date] || 0) + 1;
-        }
-      });
-
-      const totalCells = startOffset + daysInMonth <= 35 ? 35 : 42;
-
-      for (let i = 0; i < totalCells; i++) {
-        let cellDate;
-        let isOtherMonth = false;
-
-        if (i < startOffset) {
-          const dayNum = daysInPrevMonth - startOffset + i + 1;
-          cellDate = new Date(currentYear, currentMonth - 1, dayNum);
-          isOtherMonth = true;
-        } else if (i >= startOffset + daysInMonth) {
-          const dayNum = i - (startOffset + daysInMonth) + 1;
-          cellDate = new Date(currentYear, currentMonth + 1, dayNum);
-          isOtherMonth = true;
-        } else {
-          const dayNum = i - startOffset + 1;
-          cellDate = new Date(currentYear, currentMonth, dayNum);
-        }
-
-        const iso = formatDateISO(cellDate);
-        const count = visitsByDate[iso] || 0;
-        const dayOff = getDayOffInfo(iso);
-
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "day-cell";
-        if (isOtherMonth) btn.classList.add("other-month");
-        if (count > 0) btn.classList.add("has-visits");
-        if (dayOff) btn.classList.add("day-off");
-        if (iso === todayISO) btn.classList.add("today");
-        if (iso === selectedDateStr) btn.classList.add("selected");
-
-        btn.innerHTML = `
-          <span>${cellDate.getDate()}</span>
-          ${count > 0 ? `<span class="visit-count">${count}</span>` : ""}
-          ${dayOff ? `<span class="off-badge">WOLNE</span>` : ""}
-        `;
-
-        btn.onclick = () => {
-          selectedDateStr = iso;
-          currentYear = cellDate.getFullYear();
-          currentMonth = cellDate.getMonth();
-          renderCalendar();
-          renderSelectedDayVisits();
-        };
-
-        grid.appendChild(btn);
-      }
-    }
-
-    function renderSelectedDayVisits() {
-      document.getElementById("selectedDayHeading").textContent = formatPolishHeading(selectedDateStr);
-
-      const dayOff = getDayOffInfo(selectedDateStr);
-      const toggleBtn = document.getElementById("dayOffToggleBtn");
-      const bannerEl = document.getElementById("dayOffBanner");
-
-      if (dayOff) {
-        toggleBtn.textContent = "Usuń wolne";
-        toggleBtn.classList.add("active-off");
-        bannerEl.innerHTML = `
-          <div class="off-banner">
-            <div>
-              <div class="off-banner-title">🌿 Dzień wolny</div>
-              <div class="off-banner-sub">${escapeHtml(dayOff.reason || "Dzień wolny")}</div>
-            </div>
-            <button type="button" class="mini-btn" onclick="removeDayOffByDate('${selectedDateStr}')">Cofnij</button>
-          </div>
-        `;
-      } else {
-        toggleBtn.textContent = "Dzień wolny";
-        toggleBtn.classList.remove("active-off");
-        bannerEl.innerHTML = "";
-      }
-
-      const container = document.getElementById("dayVisitsList");
-
-      const dayVisits = state.visits
-        .filter(v => v.date === selectedDateStr)
-        .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
-
-      if (!dayVisits.length) {
-        container.innerHTML = `
-          <div class="empty-state">
-            ${dayOff
-              ? "Ten dzień jest oznaczony jako wolny. Możesz też dodać wizytę przyciskiem <strong>+</strong>."
-              : "Brak wizyt tego dnia.<br />Dodaj pierwszą przyciskiem <strong>+</strong>"}
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = dayVisits.map(v => {
-        const statusClass = v.status === "done" ? "status-done" : v.status === "cancelled" ? "status-cancelled" : "";
-        const statusLabel = v.status === "done" ? "✓ Odbyta" : v.status === "cancelled" ? "✕ Odwołana" : "Zaplanowana";
-        const phoneClean = (v.phone || "").replace(/[^\d+]/g, "");
-
-        return `
-          <div class="visit-card ${statusClass}">
-            <div class="visit-top">
-              <span class="visit-time-badge">🕒 ${v.time || "--:--"} (${v.duration || 60} min) · ${statusLabel}</span>
-              <span class="visit-price">${v.price ? `${v.price} zł` : ""}</span>
-            </div>
-            <div class="visit-client">${escapeHtml(v.clientName)}</div>
-            <div class="visit-service">${escapeHtml(v.service)}</div>
-            ${v.notes ? `<div class="visit-notes">📝 ${escapeHtml(v.notes)}</div>` : ""}
-            <div class="visit-actions">
-              ${phoneClean ? `<a class="mini-btn" href="tel:${phoneClean}">📞 Zadzwoń</a>` : ""}
-              ${phoneClean ? `<button type="button" class="mini-btn" onclick="sendReminderSms('${v.id}')">💬 SMS</button>` : ""}
-              <button type="button" class="mini-btn" onclick="openVisitModal('${v.id}')">Edytuj</button>
-              <button type="button" class="mini-btn danger" onclick="deleteVisit('${v.id}')">Usuń</button>
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
-
-    function renderClients() {
-      const query = (document.getElementById("clientSearch").value || "").trim().toLowerCase();
-      document.getElementById("clientsCount").textContent = state.clients.length;
-
-      const list = document.getElementById("clientsList");
-      const filtered = state.clients.filter(c => {
-        const hay = `${c.name || ""} ${c.phone || ""} ${c.notes || ""}`.toLowerCase();
-        return hay.includes(query);
-      });
-
-      if (!filtered.length) {
-        list.innerHTML = `
-          <div class="empty-state">
-            ${state.clients.length === 0
-              ? "Brak zapisanych klientek. Dodaj pierwszą wizytę przyciskiem <strong>+</strong>, a kartoteka utworzy się automatycznie."
-              : "Nie znaleziono klientek pasujących do wyszukiwania."}
-          </div>
-        `;
-        return;
-      }
-
-      list.innerHTML = filtered.map(c => {
-        const clientVisits = state.visits.filter(v => v.clientName.toLowerCase() === (c.name || "").toLowerCase());
-        const phoneClean = (c.phone || "").replace(/[^\d+]/g, "");
-        return `
-          <div class="client-card">
-            <div class="visit-top">
-              <div class="client-name">${escapeHtml(c.name)}</div>
-              <span class="visit-time-badge">Wizyt: ${clientVisits.length}</span>
-            </div>
-            <div class="client-meta">${c.phone ? `📞 ${escapeHtml(c.phone)}` : "Brak numeru telefonu"}</div>
-            ${c.notes ? `<div class="client-note">📝 ${escapeHtml(c.notes)}</div>` : ""}
-            <div class="visit-actions">
-              ${phoneClean ? `<a class="mini-btn" href="tel:${phoneClean}">Zadzwoń</a>` : ""}
-              <button type="button" class="mini-btn" onclick="quickBookClient('${escapeAttr(c.name)}', '${escapeAttr(c.phone || "")}')">+ Umów wizytę</button>
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
-
-    function renderNotificationsBadge() {
-      const todayISO = formatDateISO(new Date());
-      const upcoming = state.visits.filter(v => v.date >= todayISO && v.status === "planned");
-      document.getElementById("notifDot").classList.toggle("active", upcoming.length > 0);
-    }
-
-    function openNotifications() {
-      const todayISO = formatDateISO(new Date());
-      const upcoming = state.visits
-        .filter(v => v.date >= todayISO && v.status !== "cancelled")
-        .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
-        .slice(0, 12);
-
-      const box = document.getElementById("notifList");
-      if (!upcoming.length) {
-        box.innerHTML = `<div class="empty-state">Brak nadchodzących zaplanowanych wizyt.</div>`;
-      } else {
-        box.innerHTML = upcoming.map(v => `
-          <div class="service-item">
-            <div>
-              <div class="service-item-title">${v.date} · ${v.time} — ${escapeHtml(v.clientName)}</div>
-              <div class="service-item-sub">${escapeHtml(v.service)}${v.price ? ` (${v.price} zł)` : ""}</div>
-            </div>
-            <button type="button" class="mini-btn" onclick="closeModal('notifModal'); selectedDateStr='${v.date}'; renderCalendar(); renderSelectedDayVisits();">Pokaż</button>
-          </div>
-        `).join("");
-      }
-      openModal("notifModal");
-    }
-
-    function populateServiceDropdown(selectedName = "") {
-      const select = document.getElementById("visitServiceSelect");
-      select.innerHTML = `<option value="">-- Wybierz zabieg z cennika lub wpisz własny --</option>` +
-        state.services.map(s => `<option value="${escapeAttr(s.name)}" data-price="${s.price || ""}" data-duration="${s.duration || 60}">${escapeHtml(s.name)} (${s.price || 0} zł)</option>`).join("");
-
-      if (selectedName) {
-        const match = Array.from(select.options).find(o => o.value === selectedName);
-        if (match) select.value = selectedName;
-      }
-    }
-
-    function applySelectedService() {
-      const select = document.getElementById("visitServiceSelect");
-      const opt = select.options[select.selectedIndex];
-      if (!opt || !opt.value) return;
-      document.getElementById("visitServiceText").value = opt.value;
-      const price = opt.getAttribute("data-price");
-      const dur = opt.getAttribute("data-duration");
-      if (price) document.getElementById("visitPrice").value = price;
-      if (dur) document.getElementById("visitDuration").value = dur;
-    }
-
-    function openVisitModal(visitId = null) {
-      document.getElementById("visitForm").reset();
-      document.getElementById("visitId").value = "";
-      document.getElementById("visitDate").value = selectedDateStr;
-      document.getElementById("visitTime").value = "10:00";
-      document.getElementById("visitDuration").value = "60";
-      document.getElementById("visitStatus").value = "planned";
-      document.getElementById("visitModalTitle").textContent = "Nowa wizyta";
-
-      const dl = document.getElementById("clientSuggestions");
-      dl.innerHTML = state.clients.map(c => `<option value="${escapeAttr(c.name)}"></option>`).join("");
-
-      if (visitId) {
-        const v = state.visits.find(item => item.id === visitId);
-        if (v) {
-          document.getElementById("visitModalTitle").textContent = "Edytuj wizytę";
-          document.getElementById("visitId").value = v.id;
-          document.getElementById("visitDate").value = v.date;
-          document.getElementById("visitTime").value = v.time;
-          document.getElementById("visitClient").value = v.clientName;
-          document.getElementById("visitPhone").value = v.phone || "";
-          document.getElementById("visitServiceText").value = v.service;
-          document.getElementById("visitPrice").value = v.price || "";
-          document.getElementById("visitDuration").value = v.duration || 60;
-          document.getElementById("visitStatus").value = v.status || "planned";
-          document.getElementById("visitNotes").value = v.notes || "";
-          populateServiceDropdown(v.service);
-        }
-      } else {
-        populateServiceDropdown("");
-      }
-
-      openModal("visitModal");
-    }
-
-    function quickBookClient(name, phone) {
-      switchTab("calendar");
-      openVisitModal();
-      document.getElementById("visitClient").value = name;
-      document.getElementById("visitPhone").value = phone;
-    }
-
-    function saveVisit(e) {
-      e.preventDefault();
-      const id = document.getElementById("visitId").value || `vis-${Date.now()}`;
-      const date = document.getElementById("visitDate").value;
-      const time = document.getElementById("visitTime").value;
-      const clientName = document.getElementById("visitClient").value.trim();
-      const phone = document.getElementById("visitPhone").value.trim();
-      const service = document.getElementById("visitServiceText").value.trim();
-      const price = document.getElementById("visitPrice").value ? Number(document.getElementById("visitPrice").value) : "";
-      const duration = Number(document.getElementById("visitDuration").value) || 60;
-      const status = document.getElementById("visitStatus").value;
-      const notes = document.getElementById("visitNotes").value.trim();
-
-      const visitObj = { id, date, time, clientName, phone, service, price, duration, status, notes };
-
-      const existingIdx = state.visits.findIndex(v => v.id === id);
-      if (existingIdx >= 0) {
-        state.visits[existingIdx] = visitObj;
-      } else {
-        state.visits.push(visitObj);
-      }
-
-      // Sync client directory
-      const cIdx = state.clients.findIndex(c => c.name.toLowerCase() === clientName.toLowerCase());
-      if (cIdx >= 0) {
-        if (phone) state.clients[cIdx].phone = phone;
-        if (notes) state.clients[cIdx].notes = notes;
-      } else if (clientName) {
-        state.clients.push({
-          id: `cli-${Date.now()}`,
-          name: clientName,
-          phone,
-          notes
-        });
-      }
-
-      selectedDateStr = date;
-      const dt = parseDateISO(date);
-      currentYear = dt.getFullYear();
-      currentMonth = dt.getMonth();
-
-      closeModal("visitModal");
-      saveState(true);
-      showToast("Zapisano wizytę");
-    }
-
-    function deleteVisit(id) {
-      if (!confirm("Czy na pewno usunąć tę wizytę?")) return;
-      state.visits = state.visits.filter(v => v.id !== id);
-      saveState(true);
-      showToast("Usunięto wizytę");
-    }
-
-    function sendReminderSms(visitId) {
-      const v = state.visits.find(item => item.id === visitId);
-      if (!v || !v.phone) return;
-      const cleanPhone = v.phone.replace(/[^\d+]/g, "");
-      const text = encodeURIComponent(`Dzień dobry ${v.clientName}, przypominamy o wizycie (${v.service}) w dniu ${v.date} o godz. ${v.time} — ${state.branding.mainName} ${state.branding.subName}.`);
-      window.location.href = `sms:${cleanPhone}?body=${text}`;
-    }
-
-    /* Settings & Services CRUD */
-    function openSettings(tab = "general") {
-      document.getElementById("cfgBrandMain").value = state.branding.mainName;
-      document.getElementById("cfgBrandSub").value = state.branding.subName;
-      document.getElementById("cfgMonogram").value = state.branding.monogram;
-      document.getElementById("firebaseDocRoom").value = state.cloud.roomId || "skincare_natalialuzak";
-      document.getElementById("firebaseConfigInput").value = state.cloud.configJson || "";
-      editingServiceId = null;
-      resetServiceForm();
-      renderServicesEditor();
-      switchSettingsTab(tab);
-      openModal("settingsModal");
-    }
-
-    function switchSettingsTab(tab) {
-      document.getElementById("pillGeneral").classList.toggle("active", tab === "general");
-      document.getElementById("pillServices").classList.toggle("active", tab === "services");
-      document.getElementById("pillCloud").classList.toggle("active", tab === "cloud");
-
-      document.getElementById("settingsGeneralPanel").style.display = tab === "general" ? "block" : "none";
-      document.getElementById("settingsServicesPanel").style.display = tab === "services" ? "block" : "none";
-      document.getElementById("settingsCloudPanel").style.display = tab === "cloud" ? "block" : "none";
-    }
-
-    function saveGeneralSettings() {
-      state.branding.mainName = document.getElementById("cfgBrandMain").value.trim() || "Skincare";
-      state.branding.subName = document.getElementById("cfgBrandSub").value.trim() || "NATALIA LUZAK";
-      state.branding.monogram = (document.getElementById("cfgMonogram").value.trim() || "NL").toUpperCase();
-      saveState(true);
-      showToast("Zapisano ustawienia gabinetu");
-    }
-
-    function resetServiceForm() {
-      editingServiceId = null;
-      document.getElementById("newServiceName").value = "";
-      document.getElementById("newServicePrice").value = "";
-      document.getElementById("newServiceDuration").value = "60";
-    }
-
-    function addOrUpdateService() {
-      const name = document.getElementById("newServiceName").value.trim();
-      const price = Number(document.getElementById("newServicePrice").value) || 0;
-      const duration = Number(document.getElementById("newServiceDuration").value) || 60;
-      if (!name) {
-        showToast("Podaj nazwę zabiegu");
-        return;
-      }
-
-      if (editingServiceId) {
-        const idx = state.services.findIndex(s => s.id === editingServiceId);
-        if (idx >= 0) {
-          state.services[idx] = { id: editingServiceId, name, price, duration };
-        }
-      } else {
-        state.services.push({ id: `srv-${Date.now()}`, name, price, duration });
-      }
-
-      resetServiceForm();
-      renderServicesEditor();
-      saveState(true);
-      showToast("Zapisano cennik zabiegów");
-    }
-
-    function editService(id) {
-      const s = state.services.find(item => item.id === id);
-      if (!s) return;
-      editingServiceId = s.id;
-      document.getElementById("newServiceName").value = s.name;
-      document.getElementById("newServicePrice").value = s.price;
-      document.getElementById("newServiceDuration").value = s.duration;
-    }
-
-    function deleteService(id) {
-      state.services = state.services.filter(s => s.id !== id);
-      renderServicesEditor();
-      saveState(true);
-      showToast("Usunięto zabieg");
-    }
-
-    function renderServicesEditor() {
-      const box = document.getElementById("servicesEditorList");
-      box.innerHTML = state.services.map(s => `
-        <div class="service-item">
-          <div>
-            <div class="service-item-title">${escapeHtml(s.name)}</div>
-            <div class="service-item-sub">${s.price} zł · ${s.duration} min</div>
-          </div>
-          <div style="display:flex; gap:6px;">
-            <button type="button" class="mini-btn" onclick="editService('${s.id}')">Edytuj</button>
-            <button type="button" class="mini-btn danger" onclick="deleteService('${s.id}')">Usuń</button>
-          </div>
-        </div>
-      `).join("");
-    }
-
-    /* Backup JSON */
-    function exportBackupJson() {
-      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `skincare-kopia-${formatDateISO(new Date())}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast("Pobrano kopię zapasową");
-    }
-
-    function importBackupJson(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const imported = JSON.parse(reader.result);
-          if (imported.visits) state.visits = imported.visits;
-          if (imported.clients) state.clients = imported.clients;
-          if (imported.services && imported.services.length) state.services = imported.services;
-          if (imported.dayOffs && typeof imported.dayOffs === "object") state.dayOffs = imported.dayOffs;
-          if (imported.branding) state.branding = { ...state.branding, ...imported.branding };
-          saveState(true);
-          showToast("Przywrócono dane z pliku");
-        } catch (err) {
-          showToast("Nieprawidłowy plik kopii zapasowej");
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    /* Firebase Cloud Sync (dynamic module load) */
-    function parseFirebaseConfig(rawText) {
-      let clean = (rawText || "").trim();
-      if (!clean) return null;
-      // Allow pasting `const firebaseConfig = { ... };`
-      clean = clean.replace(/^[^=]*=\s*/, "").replace(/;\s*$/, "");
-      // Convert unquoted keys to JSON if needed
-      try {
-        return JSON.parse(clean);
-      } catch (_) {
-        const jsonLike = clean
-          .replace(/(\w+)\s*:/g, '"$1":')
-          .replace(/'/g, '"')
-          .replace(/,\s*}/g, "}");
-        return JSON.parse(jsonLike);
-      }
-    }
-
-    async function saveCloudConfig() {
-      const roomId = (document.getElementById("firebaseDocRoom").value || "skincare_natalialuzak").trim();
-      const rawCfg = document.getElementById("firebaseConfigInput").value.trim();
-
-      try {
-        const cfg = parseFirebaseConfig(rawCfg);
-        if (!cfg || !cfg.apiKey || !cfg.projectId) {
-          showToast("Brak apiKey lub projectId w konfiguracji");
-          return;
-        }
-        state.cloud.enabled = true;
-        state.cloud.roomId = roomId;
-        state.cloud.configJson = JSON.stringify(cfg, null, 2);
-        persistLocalState();
-        await initFirebaseSync(cfg, roomId);
-        renderBranding();
-        showToast("Połączono z chmurą Firebase");
-      } catch (e) {
-        showToast("Błąd formatu konfiguracji Firebase");
-      }
-    }
-
-    function disconnectCloud() {
-      if (firestoreUnsubscribe) {
-        firestoreUnsubscribe();
-        firestoreUnsubscribe = null;
-      }
-      firestoreDb = null;
-      state.cloud.enabled = false;
-      persistLocalState();
-      renderBranding();
-      showToast("Wyłączono synchronizację z chmurą");
-    }
-
-    async function initFirebaseSync(cfg, roomId) {
-      try {
-        const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js");
-        const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js");
-
-        const appName = "skincareApp";
-        const existingApp = getApps().find(a => a.name === appName);
-        const app = existingApp || initializeApp(cfg, appName);
-        const db = getFirestore(app);
-        firestoreDb = { db, doc, setDoc };
-
-        const docRef = doc(db, "salons", roomId);
-
-        if (firestoreUnsubscribe) firestoreUnsubscribe();
-        firestoreUnsubscribe = onSnapshot(docRef, (snap) => {
-          if (snap.exists()) {
-            const remote = snap.data();
-            if (remote.updatedAt && remote.updatedAt > (state._lastUpdated || 0)) {
-              state.visits = remote.visits || state.visits;
-              state.clients = remote.clients || state.clients;
-              state.services = (remote.services && remote.services.length) ? remote.services : state.services;
-              state.dayOffs = (remote.dayOffs && typeof remote.dayOffs === "object") ? remote.dayOffs : state.dayOffs;
-              state.branding = { ...state.branding, ...(remote.branding || {}) };
-              state._lastUpdated = remote.updatedAt;
-              persistLocalState();
-              renderAll();
-            }
-          } else {
-            pushToFirestore();
-          }
-        });
-
-        await pushToFirestore();
-      } catch (err) {
-        showToast("Nie udało się połączyć z Firestore");
-      }
-    }
-
-    async function pushToFirestore() {
-      if (!firestoreDb || !state.cloud.enabled) return;
-      try {
-        const nowTs = Date.now();
-        state._lastUpdated = nowTs;
-        const ref = firestoreDb.doc(firestoreDb.db, "salons", state.cloud.roomId || "skincare_natalialuzak");
-        await firestoreDb.setDoc(ref, {
-          branding: state.branding,
-          services: state.services,
-          visits: state.visits,
-          clients: state.clients,
-          dayOffs: state.dayOffs,
-          updatedAt: nowTs
-        }, { merge: true });
-      } catch (e) {
-        // silent fail if offline
-      }
-    }
-
-    /* Lock & Modals */
-    function toggleLock() {
-      openModal("lockModal");
-    }
-
-    function unlockView() {
-      closeModal("lockModal");
-    }
-
-    function openModal(id) {
-      document.getElementById(id).classList.add("open");
-    }
-
-    function closeModal(id) {
-      document.getElementById(id).classList.remove("open");
-    }
-
-    function escapeHtml(str) {
-      return String(str || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
-
-    function escapeAttr(str) {
-      return escapeHtml(str).replace(/'/g, "&#39;");
-    }
-
-    function renderAll() {
-      renderBranding();
-      renderCalendar();
-      renderSelectedDayVisits();
-      renderClients();
-      renderNotificationsBadge();
-    }
-
-    // Boot
-    renderAll();
-    if (state.cloud.enabled && state.cloud.configJson) {
-      try {
-        const cfg = parseFirebaseConfig(state.cloud.configJson);
-        if (cfg && cfg.apiKey) initFirebaseSync(cfg, state.cloud.roomId);
-      } catch (_) {}
-    }
-  </script>
-</body>
-</html>
+    function jumpTo
